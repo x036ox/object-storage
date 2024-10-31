@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.List;
 
 @Slf4j
@@ -103,5 +104,10 @@ public class S3ObjectStorageService implements ObjectStorageService{
     @Override
     public String getObjectUrl(String objectName) throws Exception {
         return s3.getUrl(bucket, objectName).toExternalForm();
+    }
+
+    @Override
+    public Instant getLastModified(String objectName) {
+        return s3.getObject(bucket, objectName).getObjectMetadata().getLastModified().toInstant();
     }
 }
