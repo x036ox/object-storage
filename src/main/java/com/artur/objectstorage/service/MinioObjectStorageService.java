@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -127,5 +128,13 @@ public class MinioObjectStorageService implements ObjectStorageService {
                         .object(objectName)
                         .build()
         );
+    }
+
+    @Override
+    public Instant getLastModified(String objectName) throws Exception{
+        return minioClient.statObject(StatObjectArgs.builder()
+                        .bucket(this.minioConfig.storeBucket())
+                        .object(objectName)
+                .build()).lastModified().toInstant();
     }
 }

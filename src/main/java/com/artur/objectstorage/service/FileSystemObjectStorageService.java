@@ -11,6 +11,7 @@ import org.springframework.util.FileSystemUtils;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -39,6 +40,11 @@ public class FileSystemObjectStorageService implements ObjectStorageService{
     @Override
     public String getObjectUrl(String objectName) throws Exception {
         return null;
+    }
+
+    @Override
+    public Instant getLastModified(String objectName) throws Exception {
+        return Instant.ofEpochMilli(new File(objectName).lastModified());
     }
 
     @Override

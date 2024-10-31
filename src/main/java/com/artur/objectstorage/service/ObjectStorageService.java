@@ -2,6 +2,7 @@ package com.artur.objectstorage.service;
 
 import java.io.File;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.List;
 
 public interface ObjectStorageService {
@@ -21,4 +22,6 @@ public interface ObjectStorageService {
     void removeFolder(String prefix) throws Exception;
 
     String getObjectUrl(String objectName) throws Exception;
+
+    Instant getLastModified(String objectName) throws Exception;
 }
