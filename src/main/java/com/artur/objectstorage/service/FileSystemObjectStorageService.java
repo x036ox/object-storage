@@ -26,20 +26,31 @@ public class FileSystemObjectStorageService implements ObjectStorageService{
 
     public FileSystemObjectStorageService(String rootFolder){
         this.rootFolder = rootFolder != null ? rootFolder : DATA_PATH;
+        createDirectory(Path.of(this.rootFolder));
     }
 
     public FileSystemObjectStorageService(){
-        this.rootFolder = DATA_PATH;
+        this(DATA_PATH);
+    }
+
+    private void createDirectory(Path path){
+        if(Files.notExists(path)){
+            try {
+                Files.createDirectories(path);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override
     public void removeFolder(String prefix) throws IOException {
-        FileSystemUtils.deleteRecursively(Path.of(prefix));
+        FileSystemUtils.deleteRecursively(Path.of(rootFolder, prefix));
     }
 
     @Override
     public String getObjectUrl(String objectName) throws Exception {
-        return null;
+        return rootFolder + File.separator + objectName;
     }
 
     @Override
@@ -55,7 +66,7 @@ public class FileSystemObjectStorageService implements ObjectStorageService{
         if(objectName.contains("/")){
             putFolder(objectName.substring(0, objectName.lastIndexOf("/")));
         }
-        File file = new File(rootFolder + objectName);
+        File file = new File(rootFolder + File.separator + objectName);
         try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
             inputStream.transferTo(fileOutputStream);
         }
@@ -65,21 +76,13 @@ public class FileSystemObjectStorageService implements ObjectStorageService{
     @Override
     public void uploadObject(File object, String pathname) throws Exception {
         try (InputStream inputStream = new FileInputStream(object)){
-            putObject(inputStream, pathname);
+            putObject(inputStream, pathname + File.separator + object.getName());
         }
     }
 
     @Override
     public void putFolder(String prefix) {
-        Path path = Path.of(rootFolder + prefix);
-        if(Files.notExists(path)){
-            try {
-                Files.createDirectories(path);
-            } catch (IOException e) {
-                logger.error("Could not create directory [ " + path + " ]", e);
-                throw new RuntimeException(e);
-            }
-        }
+        createDirectory(Path.of(rootFolder, prefix));
     }
 
     @Override
@@ -93,11 +96,11 @@ public class FileSystemObjectStorageService implements ObjectStorageService{
 
     @Override
     public InputStream getObject(String objectName) throws Exception {
-        return new FileInputStream(rootFolder + objectName);
+        return new FileInputStream(Path.of(rootFolder, objectName).toFile());
     }
 
     @Override
     public void removeObject(String objectName) throws Exception {
-        Files.deleteIfExists(Path.of(rootFolder + objectName));
+        Files.deleteIfExists(Path.of(rootFolder, objectName));
     }
 }
