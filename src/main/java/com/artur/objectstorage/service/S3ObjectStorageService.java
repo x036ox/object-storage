@@ -65,7 +65,7 @@ public class S3ObjectStorageService implements ObjectStorageService{
         if(pathname.startsWith("/")){
             pathname = pathname.replaceFirst("/", "");
         }
-        if(!pathname.endsWith("/")){
+        if(!pathname.isEmpty() && !pathname.endsWith("/")){
             pathname += '/';
         }
         s3.putObject(bucket, pathname + object.getName(), object);
