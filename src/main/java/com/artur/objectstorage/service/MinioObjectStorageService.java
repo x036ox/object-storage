@@ -1,7 +1,6 @@
 package com.artur.objectstorage.service;
 
 
-import com.artur.objectstorage.config.MinioConfig;
 import io.minio.*;
 import io.minio.messages.Item;
 import lombok.Getter;
@@ -22,40 +21,19 @@ import java.util.List;
 public class MinioObjectStorageService implements ObjectStorageService {
     private static final Logger logger = LoggerFactory.getLogger(MinioObjectStorageService.class);
 
-    private final MinioConfig minioConfig;
     private MinioClient minioClient;
+    private String bucket;
 
-    public MinioObjectStorageService(MinioConfig minioConfig){
-        this.minioConfig = minioConfig;
-        this.minioClient = minioClient(this.minioConfig);
-    }
-
-    private MinioClient minioClient(MinioConfig minioConfig){
-        MinioClient minioClient = MinioClient.builder()
-                .endpoint(minioConfig.url())
-                .credentials(minioConfig.accessKey(), minioConfig.secretKey()).build();
-        initBucket(minioClient, minioConfig.storeBucket());
-        return minioClient;
-    }
-
-    private void initBucket(MinioClient minioClient, String bucket) {
-        try {
-            boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
-            if (!exists) {
-                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
-                logger.info("Bucket [{}] successfully created", bucket);
-            }
-        } catch (Exception e){
-            logger.error("Error occurred while checking or creating bucket [{}]", bucket);
-            throw new RuntimeException(e);
-        }
+    public MinioObjectStorageService(MinioClient minioClient, String bucket){
+        this.minioClient = minioClient;
+        this.bucket = bucket;
     }
 
     @Override
     public String putObject(InputStream objectInputStream, String objectName) throws Exception {
         return minioClient.putObject(
                 PutObjectArgs.builder()
-                        .bucket(minioConfig.storeBucket())
+                        .bucket(bucket)
                         .object(objectName)
                         .stream(objectInputStream, -1, 5242880)
                         .build()
@@ -67,7 +45,7 @@ public class MinioObjectStorageService implements ObjectStorageService {
         minioClient.uploadObject(UploadObjectArgs.builder()
                         .object(pathname)
                         .filename(object.getAbsolutePath())
-                        .bucket(minioConfig.storeBucket())
+                        .bucket(bucket)
                 .build());
     }
 
@@ -75,7 +53,7 @@ public class MinioObjectStorageService implements ObjectStorageService {
     public void putFolder(String folderName) throws Exception {
         minioClient.putObject(
                 PutObjectArgs.builder()
-                        .bucket(minioConfig.storeBucket())
+                        .bucket(bucket)
                         .object(folderName)
                         .stream(new ByteArrayInputStream(new byte[] {}), 0, -1)
                         .build());
@@ -89,7 +67,7 @@ public class MinioObjectStorageService implements ObjectStorageService {
         List<String> results = new ArrayList<>();
         for (Result<Item> itemResult :
                 minioClient.listObjects(
-                        ListObjectsArgs.builder().bucket(minioConfig.storeBucket()).prefix(prefix).recursive(false).build())) {
+                        ListObjectsArgs.builder().bucket(bucket).prefix(prefix).recursive(false).build())) {
             Item i = itemResult.get();
             if (i.isDir()) continue;
             results.add(i.objectName());
@@ -99,12 +77,12 @@ public class MinioObjectStorageService implements ObjectStorageService {
 
     @Override
     public GetObjectResponse getObject(String objectName) throws Exception {
-        return minioClient.getObject(GetObjectArgs.builder().bucket(minioConfig.storeBucket()).object(objectName).build());
+        return minioClient.getObject(GetObjectArgs.builder().bucket(bucket).object(objectName).build());
     }
 
     @Override
     public void removeObject(String objectName) throws Exception {
-        minioClient.removeObject(RemoveObjectArgs.builder().bucket(minioConfig.storeBucket()).object(objectName).build());
+        minioClient.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(objectName).build());
     }
 
     @Override
@@ -112,9 +90,9 @@ public class MinioObjectStorageService implements ObjectStorageService {
         if(!prefix.endsWith("/")){
             prefix += "/";
         }
-        for(var item : minioClient.listObjects(ListObjectsArgs.builder().prefix(prefix).bucket(minioConfig.storeBucket()).build())){
+        for(var item : minioClient.listObjects(ListObjectsArgs.builder().prefix(prefix).bucket(bucket).build())){
             minioClient.removeObject(RemoveObjectArgs.builder()
-                    .bucket(minioConfig.storeBucket())
+                    .bucket(bucket)
                     .object(item.get().objectName())
                     .build());
         }
@@ -124,7 +102,7 @@ public class MinioObjectStorageService implements ObjectStorageService {
     public String getObjectUrl(String objectName) throws Exception {
         return minioClient.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
-                        .bucket(minioConfig.storeBucket())
+                        .bucket(bucket)
                         .object(objectName)
                         .build()
         );
@@ -133,7 +111,7 @@ public class MinioObjectStorageService implements ObjectStorageService {
     @Override
     public Instant getLastModified(String objectName) throws Exception{
         return minioClient.statObject(StatObjectArgs.builder()
-                        .bucket(this.minioConfig.storeBucket())
+                        .bucket(bucket)
                         .object(objectName)
                 .build()).lastModified().toInstant();
     }
